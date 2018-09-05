@@ -3,7 +3,7 @@ const loadAllItems = require('./items');
 
 const _ = require('lodash');
 
-function bestCharge(selectedItems) {
+module.exports = function bestCharge(selectedItems) {
   return (_.flow([
     countItems,
     generateOrderAndCalculatePrice,
@@ -41,19 +41,15 @@ function generateOrderAndCalculatePrice(itemList) {
 }
 
 function selectPromotion(order) {
-  let discounts = loadPromotions().map(promotion => {
-    return {
-      promotion: promotion,
-      discount: promotion.calculate(order)
+  return loadPromotions().reduce((order, promotion) => {
+    let discount = promotion.calculate(order);
+    if (discount > order.discount) {
+      order.discount = discount;
+      order.promotion = promotion;
+      order.totalPrice = order.price - discount;
     }
-  }).sort(((a, b) => b.discount - a.discount));
-
-  let bestDiscount = discounts[0];
-  order.promotion = bestDiscount ? bestDiscount.promotion : null;
-  order.discount = bestDiscount ? bestDiscount.discount : 0;
-  order.totalPrice = order.price - order.discount;
-
-  return order;
+    return order;
+  }, order);
 }
 
 function renderInvoice(order) {
@@ -73,5 +69,3 @@ function renderInvoice(order) {
 function findItemById(id) {
   return loadAllItems().find(item => item.id === id);
 }
-
-module.exports = bestCharge;
