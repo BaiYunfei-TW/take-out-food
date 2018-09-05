@@ -5,14 +5,14 @@ const _ = require('lodash');
 
 module.exports = function bestCharge(selectedItems) {
   return (_.flow([
-    countItems,
+    countItemsAndCalculateSubtotal,
     generateOrderAndCalculatePrice,
-    selectPromotion,
+    selectBestPromotion,
     renderInvoice
   ]))(selectedItems);
 }
 
-function countItems(selectedItems) {
+function countItemsAndCalculateSubtotal(selectedItems) {
   return selectedItems.map(str => {
     let id = str.split('x')[0].trim();
     let quantity = parseInt(str.split('x')[1].trim());
@@ -40,7 +40,7 @@ function generateOrderAndCalculatePrice(itemList) {
   });
 }
 
-function selectPromotion(order) {
+function selectBestPromotion(order) {
   return loadPromotions().reduce((order, promotion) => {
     let discount = promotion.calculate(order);
     if (discount > order.discount) {
