@@ -19,6 +19,17 @@ function bestCharge(selectedItems) {
     return order;
   }, {items: [], price: 0, discount: 0, totalPrice: 0});
 
+  let discounts = loadPromotions().map(promotion => {
+    return {
+      promotion: promotion,
+      discount: promotion.calculate(order)
+    }
+  }).sort(((a, b) => b.discount - a.discount));
+
+  order.promotion = discounts[0];
+  order.discount = discounts[0] ? discounts[0].discount : 0;
+  order.totalPrice = order.price - order.discount;
+
   console.log(order);
 
   return "Not Implemented";
