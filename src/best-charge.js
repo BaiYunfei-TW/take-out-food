@@ -1,8 +1,19 @@
 const loadPromotions = require('./promotions');
-const loadAllItems = require('./items')
+const loadAllItems = require('./items');
+
+const _ = require('lodash');
 
 function bestCharge(selectedItems) {
-  let order = selectedItems.map(str => {
+  return (_.flow([
+    countItems,
+    generateOrderAndCalculatePrice,
+    selectPromotion,
+    renderInvoice
+  ]))(selectedItems);
+}
+
+function countItems(selectedItems) {
+  return selectedItems.map(str => {
     let id = str.split('x')[0].trim();
     let quantity = parseInt(str.split('x')[1].trim());
     let item = findItemById(id);
@@ -12,13 +23,24 @@ function bestCharge(selectedItems) {
       quantity: quantity,
       subtotal: item.price * quantity
     }
-  }).reduce((order, item) => {
+  });
+}
+
+function generateOrderAndCalculatePrice(itemList) {
+  return itemList.reduce((order, item) => {
     order.items.push(item);
     order.price += item.subtotal;
     order.totalPrice += item.subtotal;
     return order;
-  }, {items: [], price: 0, discount: 0, totalPrice: 0});
+  }, {
+      price: 0,
+      items: [],
+      discount: 0,
+      totalPrice: 0
+  });
+}
 
+function selectPromotion(order) {
   let discounts = loadPromotions().map(promotion => {
     return {
       promotion: promotion,
@@ -26,11 +48,15 @@ function bestCharge(selectedItems) {
     }
   }).sort(((a, b) => b.discount - a.discount));
 
-  order.promotion = discounts[0].promotion;
-  order.discount = discounts[0] ? discounts[0].discount : 0;
+  let bestDiscount = discounts[0];
+  order.promotion = bestDiscount ? bestDiscount.promotion : null;
+  order.discount = bestDiscount ? bestDiscount.discount : 0;
   order.totalPrice = order.price - order.discount;
 
-  //printOrder
+  return order;
+}
+
+function renderInvoice(order) {
   let invoice = '============= 订餐明细 =============\n';
   invoice += order.items.map(item => `${item.item.name} x ${item.quantity} = ${item.subtotal}元\n`).join("")
   invoice += '-----------------------------------\n';
